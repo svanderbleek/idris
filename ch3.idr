@@ -63,4 +63,3 @@ mulRowsCols xs (y :: ys) =
 mulMatrix : Num a => Matrix n m a -> Matrix m p a -> Matrix n p a
 mulMatrix x y =
   transposeMatrix (mulRowsCols x (transposeMatrix y))
-
