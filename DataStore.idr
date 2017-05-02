@@ -50,6 +50,7 @@ getCommand store id =
     Nothing => ("Out of Range\n", store)
     (Just id) => (index id (items store) ++ "\n", store)
 
+-- Wrong Index tracking but meh
 searchCommand : (items : Vect n String) -> (q : String) -> (found : List String) -> String
 searchCommand [] _ found =
   if length found > 0 then
@@ -58,7 +59,7 @@ searchCommand [] _ found =
     "No entries found\n"
 searchCommand (item :: items) q found =
   if isInfixOf q item then
-    searchCommand items q (item :: found)
+    searchCommand items q (((show (length items)) ++ ": " ++ item) :: found)
   else
     searchCommand items q found
 
