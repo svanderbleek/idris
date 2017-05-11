@@ -13,9 +13,9 @@ printLonger =
 
 printLonger' : IO ()
 printLonger' =
-  getLine >>=
-  \s1 => getLine >>=
-  \s2 => putStrLn (show (maxS s1 s2))
+  getLine >>= \s1 =>
+  getLine >>= \s2 =>
+  putStrLn (show (maxS s1 s2))
   where
     maxS : String -> String -> Nat
     maxS s1 s2 = max (length s1) (length s2)
