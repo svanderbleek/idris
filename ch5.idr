@@ -89,3 +89,60 @@ readVect = do
 printVect : Show a => VectUnknown a -> IO ()
 printVect (MkVect len xs) =
   putStrLn (show xs ++ " (length " ++ show len ++ ")")
+
+readVect' : IO (len ** Vect len String)
+readVect' = do
+  x <- getLine
+  if x == "" then
+    pure (_ ** [])
+  else do
+    (_ ** xs) <- readVect'
+    pure (_ ** x::xs)
+
+zipIns : IO ()
+zipIns = do
+  putStrLn "enter v1"
+  (l1 ** v1) <- readVect'
+  putStrLn "enter v2"
+  (l2 ** v2) <- readVect'
+  case exactLength l1 v2 of
+    Nothing => putStrLn "ya done goofed"
+    Just v2' => printLn (zip v1 v2')
+
+readToBlank : IO (List String)
+readToBlank = do
+  l <- getLine
+  if l == "" then
+    pure []
+  else do
+    ls <- readToBlank
+    pure $ l :: ls
+
+readAndSave : IO ()
+readAndSave = do
+  putStrLn "input to write"
+  ls <- readToBlank
+  putStrLn "file name"
+  nm <- getLine
+  er <- writeFile nm (show ls)
+  case er of
+    Right () => putStrLn "ok"
+    Left FileError => putStrLn "ok"
+
+readVectf : (f : File) -> IO (n ** Vect n String)
+readVectf f = do
+  more <- fEOF f
+  if not more then do
+    Right l <- fGetLine f
+    (_ ** ls) <- readVectf f
+    pure $ (_ ** l :: ls)
+  else
+    pure (_ ** [])
+
+readVectFile : (filename : String) -> IO (n ** Vect n String)
+readVectFile filename = do
+  Right f <- openFile filename Read
+  readVectf f
+
+
+
