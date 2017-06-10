@@ -91,3 +91,10 @@ testMatrix : Matrix 2 3
 testMatrix =
   [[0,0,0]
   ,[0,0,0]]
+
+TupleVect : (n : Nat) -> (t : Type) -> Type
+TupleVect Z _ = ()
+TupleVect (S k) t = (t, TupleVect k t)
+
+testTupleVect : TupleVect 4 Nat
+testTupleVect = (0, 0, 0, 0, ())
