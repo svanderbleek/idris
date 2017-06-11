@@ -2,53 +2,61 @@ module Main
 
 import Data.Vect
 
-data DataStore : Type where
-  MkData : (size : Nat)
-         -> (items : Vect size String)
-         -> DataStore
+infixr 5 .+.
 
-size : DataStore -> Nat
-size (MkData size' _) = size'
+data Schema
+  = SStr
+  | SInt
+  | (.+.) Schema Schema
 
-items: (store : DataStore) -> Vect (size store) String
-items (MkData _ items') = items'
+SchemaType : Schema -> Type
+SchemaType SStr = String
+SchemaType SInt = Int
+SchemaType (x .+. y) = (SchemaType x, SchemaType y)
 
-addToStore : DataStore -> String -> DataStore
-addToStore (MkData _ items) item =
-  MkData _ (addToEnd items)
+record DataStore where
+  constructor MkData
+  schema : Schema
+  size : Nat
+  items : Vect size (SchemaType schema)
+
+addToStore : (store : DataStore) -> (SchemaType (schema store)) -> DataStore
+addToStore (MkData schema _ items) item =
+  MkData _ _ (addToEnd items)
   where
-    addToEnd : Vect n String -> Vect (S n) String
+    addToEnd : Vect n (SchemaType schema) -> Vect (S n) (SchemaType schema)
     addToEnd [] = [item]
     addToEnd (x :: xs) = x :: addToEnd xs
 
-data Command
-  = Add String
-  | Get Integer
-  | Quit
-  | Size
-  | Search String
+data Command : Schema -> Type where
+  Add : SchemaType schema -> Command schema
+  Get : Integer -> Command schema
+  Quit : Command schema
+  Size : Command schema
+  Search : String -> Command schema
 
-parseCommand : (cmd : String) -> (args : String) -> Maybe Command
-parseCommand "add" str = Just (Add str)
-parseCommand "search" str = Just (Search str)
-parseCommand "size" _ = Just Size
-parseCommand "get" int =
+parseCommand : (schema : Schema) -> (cmd : String) -> (args : String) -> Maybe (Command schema)
+parseCommand schema "add" str = Just (Add (?parseschema str))
+parseCommand schema "search" str = Just (Search str)
+parseCommand schema "size" _ = Just Size
+parseCommand schema "get" int =
   case all isDigit (unpack int) of
     False => Nothing
     True => Just (Get (cast int))
-parseCommand "quit" _ = Just Quit
-parseCommand _ _ = Nothing
+parseCommand schema "quit" _ = Just Quit
+parseCommand _ _ _ = Nothing
 
-parse : (input : String) -> Maybe Command
-parse input =
+parse : (schema : Schema) -> (input : String) -> Maybe (Command schema)
+parse schema input =
   case span (/= ' ') input of
-    (cmd, args) => parseCommand cmd (ltrim args)
+    (cmd, args) => parseCommand schema cmd (ltrim args)
 
+{-
 getCommand : (store : DataStore) -> (id : Integer) -> (String, DataStore)
 getCommand store id =
   case integerToFin id (size store) of
     Nothing => ("Out of Range\n", store)
-    (Just id) => (index id (items store) ++ "\n", store)
+    (Just id) => (?showa (index id (items store)) ++ "\n", store)
 
 -- Wrong Index tracking but meh
 searchCommand : (items : Vect n String) -> (q : String) -> (found : List String) -> String
@@ -77,3 +85,4 @@ processInput store input =
 main : IO ()
 main =
   replWith (MkData _ []) "Command: " processInput
+-}
