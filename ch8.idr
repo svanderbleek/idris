@@ -40,7 +40,7 @@ same_lists
 same_lists _ pxs = cong pxs
 
 data ThreeEq : a -> b -> c -> Type where
-  SameThree : ThreeEq a a a
+  SameThree : (x : a) -> ThreeEq x x x
 
 allSameS : (x, y, z : Nat) -> ThreeEq x y z -> ThreeEq (S x) (S y) (S z)
-allSameS _ _ _ SameThree = SameThree
+allSameS z z z (SameThree z) = SameThree (S z)
