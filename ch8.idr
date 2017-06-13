@@ -30,7 +30,6 @@ same_cons
   -> x :: xs = x :: ys
 same_cons prf = cong prf
 
-
 same_lists
   : {xs : List a}
   -> {ys : List a}
@@ -44,3 +43,29 @@ data ThreeEq : a -> b -> c -> Type where
 
 allSameS : (x, y, z : Nat) -> ThreeEq x y z -> ThreeEq (S x) (S y) (S z)
 allSameS z z z (SameThree z) = SameThree (S z)
+
+append : Vect n a -> Vect m a -> Vect (m + n) a
+append [] {m} ys =
+  rewrite plusZeroRightNeutral m in
+  ys
+append {n = S k} {m} (x :: xs) ys =
+  rewrite sym (plusSuccRightSucc m k) in
+  x :: append xs ys
+
+plusCommutes' : (n : Nat) -> (m : Nat) -> n + m = m + n
+plusCommutes' Z m =
+  rewrite plusZeroRightNeutral m in
+  Refl
+plusCommutes' (S k) m =
+  rewrite plusCommutes' k m in
+  rewrite plusSuccRightSucc m k in
+  Refl
+
+reverse' : Vect n a -> Vect n a
+reverse' xs =
+  reverse'' [] xs
+  where
+    reverse'' : Vect n a -> Vect m a -> Vect (n + m) a
+    reverse'' acc [] = ?revp_1 acc
+    reverse'' acc (x :: xs) = ?revp_2 (reverse'' (x :: acc) xs)
+
