@@ -66,6 +66,63 @@ reverse' xs =
   reverse'' [] xs
   where
     reverse'' : Vect n a -> Vect m a -> Vect (n + m) a
-    reverse'' acc [] = ?revp_1 acc
-    reverse'' acc (x :: xs) = ?revp_2 (reverse'' (x :: acc) xs)
+    reverse'' {n} acc [] = rewrite plusZeroRightNeutral n in acc
+    reverse'' {n} {m = S k} acc (x :: xs) =
+      let reversed = reverse'' (x :: acc) xs in
+      rewrite sym (plusSuccRightSucc n k) in
+      reversed
 
+twoPlusTwoNotFive : 2 + 2 = 5 -> Void
+twoPlusTwoNotFive Refl impossible
+
+valueNotSucc : (x : Nat) -> x = S x -> Void
+valueNotSucc _ Refl impossible
+
+zeroNotSucc : (0 = S k) -> Void
+zeroNotSucc Refl impossible
+
+noRec : (contra : (k = j) -> Void) -> (S k = S j) -> Void
+noRec contra Refl = contra Refl
+
+succNotZero : (S k = 0) -> Void
+succNotZero Refl impossible
+
+checkEqNat' : (n : Nat) -> (m : Nat) -> Dec (n = m)
+checkEqNat' Z Z = Yes Refl
+checkEqNat' Z (S k) = No zeroNotSucc
+checkEqNat' (S k) Z = No succNotZero
+checkEqNat' (S k) (S j) =
+  case checkEqNat' k j of
+    Yes prf => Yes (cong prf)
+    No contra => No (noRec contra)
+
+exactLength'' : (len : Nat) -> (input : Vect m a) -> Maybe (Vect len a)
+exactLength'' {m} len input =
+  case decEq m len of
+    Yes Refl => Just input
+    No contra => Nothing
+
+headUnequal : DecEq a
+  => {xs : Vect n a}
+  -> {ys : Vect n a}
+  -> (contra : (x = y) -> Void)
+  -> ((x :: xs) = (y :: ys))
+  -> Void
+headUnequal contra Refl = contra Refl
+
+tailUnequal : DecEq a
+  => {xs : Vect n a}
+  -> {ys : Vect n a}
+  -> (contra : (xs = ys) -> Void)
+  -> ((x :: xs) = (y :: ys))
+  -> Void
+tailUnequal contra Refl = contra Refl
+
+DecEq a => DecEq (Vect n a) where
+  decEq [] [] = Yes Refl
+  decEq (x :: xs) (y :: ys) =
+    case decEq x y of
+      Yes Refl => case decEq xs ys of
+        Yes Refl => Yes Refl
+        No contra => No (tailUnequal contra)
+      No contra => No (headUnequal contra)
