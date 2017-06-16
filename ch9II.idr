@@ -40,6 +40,9 @@ data Last : List a -> a -> Type where
 last123 : Last [1,2,3] 3
 last123 = LastCons (LastCons LastOne)
 
+Uninhabited (Last [] x) where
+  uninhabited Void impossible
+
 singleNotLast : (notEql : (x = value) -> Void) -> Last [x] value -> Void
 singleNotLast notEql LastOne = notEql Refl
 singleNotLast _ (LastCons LastOne) impossible
@@ -49,11 +52,7 @@ emptyNotLast : Last [] value -> Void
 emptyNotLast LastOne impossible
 emptyNotLast (LastCons _) impossible
 
-Uninhabited (Last [] x) where
-  uninhabited Void impossible
-
-notLastStep : (notLast : Last xs value -> Void) -> Last (x :: xs) value -> Void
-notLastStep notLast LastOne = notLast (absurd LastOne)
+notLastStep : (notLast : Last (y :: xs) value -> Void) -> Last (x :: (y :: xs)) value -> Void
 notLastStep notLast (LastCons prf) = notLast prf
 
 isLast : DecEq a => (xs : List a) -> (value : a) -> Dec (Last xs value)
@@ -62,7 +61,7 @@ isLast [x] value =
   case decEq x value of
     Yes Refl => Yes LastOne
     No notEql => No $ (singleNotLast notEql)
-isLast (x :: xs) value =
-  case isLast xs value of
+isLast (x :: y :: xs) value =
+  case isLast (y :: xs) value of
     Yes prf => Yes (LastCons prf)
     No notLast => No $ notLastStep notLast
