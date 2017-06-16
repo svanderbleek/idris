@@ -15,8 +15,9 @@ notInNil (There _) impossible
 notInTail
   :  (notHere : (e = x) -> Void)
   -> (notThere : Elem e xs -> Void)
-  -> Elem e (x :: xs)
-notInTail notHere notThere = ?notInTail_rhs_2
+  -> Elem e (x :: xs) -> Void
+notInTail notHere notThere Here = notHere Refl
+notInTail notHere notThere (There later) = notThere later
 
 isElem : DecEq a => (e : a) -> (v : Vect n a) -> Dec (Elem e v)
 isElem e [] = No notInNil
@@ -26,4 +27,42 @@ isElem e (x :: xs) =
     No notHere =>
       case isElem e xs of
         Yes prf => Yes (There prf)
-        No notThere => No $ notInTail notHere notThere
+        No notThere => No (notInTail notHere notThere)
+
+data ElemList : a -> List a -> Type where
+  HereList : ElemList x (x :: xs)
+  ThereList : (later : ElemList x xs) -> ElemList x (y :: xs)
+
+data Last : List a -> a -> Type where
+  LastOne : Last [value] value
+  LastCons : (prf : Last xs value) -> Last (x :: xs) value
+
+last123 : Last [1,2,3] 3
+last123 = LastCons (LastCons LastOne)
+
+singleNotLast : (notEql : (x = value) -> Void) -> Last [x] value -> Void
+singleNotLast notEql LastOne = notEql Refl
+singleNotLast _ (LastCons LastOne) impossible
+singleNotLast _ (LastCons (LastCons _)) impossible
+
+emptyNotLast : Last [] value -> Void
+emptyNotLast LastOne impossible
+emptyNotLast (LastCons _) impossible
+
+Uninhabited (Last [] x) where
+  uninhabited Void impossible
+
+notLastStep : (notLast : Last xs value -> Void) -> Last (x :: xs) value -> Void
+notLastStep notLast LastOne = notLast (absurd LastOne)
+notLastStep notLast (LastCons prf) = notLast prf
+
+isLast : DecEq a => (xs : List a) -> (value : a) -> Dec (Last xs value)
+isLast [] value = No emptyNotLast
+isLast [x] value =
+  case decEq x value of
+    Yes Refl => Yes LastOne
+    No notEql => No $ (singleNotLast notEql)
+isLast (x :: xs) value =
+  case isLast xs value of
+    Yes prf => Yes (LastCons prf)
+    No notLast => No $ notLastStep notLast
