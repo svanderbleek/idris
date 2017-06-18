@@ -13,8 +13,10 @@ listLast [] = Empty
 listLast (x :: xs) =
   case listLast xs of
     Empty => NonEmpty [] x
-    NonEmpty xs x => ?y_3
+    NonEmpty ys y => NonEmpty (x :: ys) y
 
 describeListEnd : List Int -> String
-describeListEnd [] = ?describeListEnd_rhs_1
--- describeListEnd (xs ++ [x]) = ?describeListEnd_rhs_2
+describeListEnd xs with (listLast xs)
+  describeListEnd [] | Empty = "empty"
+  describeListEnd (ys ++ [x]) | (NonEmpty ys x) = "nonempty, initial = " ++ show ys
+
