@@ -8,10 +8,10 @@ data WordState : (guesses : Nat) -> (letters : Nat) -> Type where
     -> (missing : Vect letters Char)
     -> WordState guesses letters
 
-data Finished : Type where
-  Lost : (game : WordState 0 (S letters)) -> Finished
-  Won : (game : WordState (S guesses) 0) -> Finished
-  Default : (game : WordState 0 0) -> Finished
+data Finished : Nat -> Nat -> Type where
+  Lost : (game : WordState 0 (S letters)) -> Finished 0 (S letters)
+  Won : (game : WordState (S guesses) 0) -> Finished (S guesses) 0
+  Default : (game : WordState 0 0) -> Finished 0 0
 
 data ValidInput : List Char -> Type where
   Letter : (c : Char) -> ValidInput [c]
@@ -46,31 +46,35 @@ removeElem e (e :: xs) Here = xs
 removeElem {n = S k} e (x :: xs) (There later) =
   x :: removeElem e xs later
 
-processGuess :
-  (guess : Char) ->
-  (WordState (S guesses) (S letters)) ->
-  Either (WordState guesses (S letters)) (WordState (S guesses) letters)
+processGuess : (guess : Char) -> (WordState (S guesses) (S letters)) -> Either (WordState guesses (S letters)) (WordState (S guesses) letters)
 processGuess guess (MkWordState word missing) =
   case isElem guess missing of
     Yes prf => Right (MkWordState word (removeElem guess missing prf))
     No contra => Left (MkWordState word missing)
 
-isFinished : (state : WordState guesses letters) -> Dec Finished
+notFinished : (state : WordState (S k) (S j)) -> Finished (S k) (S j) -> Void
+notFinished _ (Lost _) impossible
+notFinished _ (Won _) impossible
+notFinished _ (Default _) impossible
+
+isFinished : (state : WordState guesses letters) -> Dec (Finished guesses letters)
 isFinished {guesses = Z} {letters = Z} state = Yes $ Default state
 isFinished {guesses = Z} {letters = (S k)} state = Yes (Lost state)
 isFinished {guesses = (S k)} {letters = Z} state = Yes (Won state)
-isFinished {guesses = (S k)} {letters = (S j)} state = No ?notFinished
+isFinished {guesses = (S k)} {letters = (S j)} state = No (notFinished state)
 
 checkFinished :
   Either (WordState guesses (S letters)) (WordState (S guesses) letters) ->
-  Dec Finished
-checkFinished (Left l) = isFinished l
-checkFinished (Right r) = isFinished r
+  Either (Dec (Finished guesses (S letters))) (Dec (Finished (S guesses) letters))
+checkFinished (Left l) = Left $ isFinished l
+checkFinished (Right r) = Right $ isFinished r
 
-game : WordState (S guesses) (S letters) -> IO Finished
+game : WordState (S guesses) (S letters) -> IO (Finished _ _)
 game state = do
   (_ ** Letter guess) <- readGuess
   let nextState = processGuess guess state
   case checkFinished nextState of
-    Yes prf => pure prf
-    No contra => game $ fromEither nextState
+    (Left (Yes prf)) => pure prf
+    (Left (No contra)) => game nextState
+    (Right (Yes prf)) => pure prf
+    (Right (No contra)) => game nextState
