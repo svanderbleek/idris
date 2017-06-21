@@ -20,3 +20,24 @@ describeListEnd xs with (listLast xs)
   describeListEnd [] | Empty = "empty"
   describeListEnd (ys ++ [x]) | (NonEmpty ys x) = "nonempty, initial = " ++ show ys
 
+myReverse : List a -> List a
+myReverse xs with (listLast xs)
+  myReverse [] | Empty = []
+  myReverse (ys ++ [x]) | (NonEmpty ys x) = x :: myReverse ys
+
+data SplitList : List a -> Type where
+  SplitNil : SplitList []
+  SplitOne : (x : a) -> SplitList [x]
+  SplitPair : (left : List a) -> (right : List a) -> SplitList (left ++ right)
+
+splitListDup : (xs : List a) -> (xs : List a) -> SplitList xs
+splitListDup xs ys = ?splitListInTwo_rhs
+
+splitList : (xs : List a) -> SplitList xs
+splitList xs = splitListDup xs xs
+
+mergeSort : Ord a => List a -> List a
+mergeSort xs with (splitList xs)
+  mergeSort [] | SplitNil = []
+  mergeSort [x] | (SplitOne x) = [x]
+  mergeSort (left ++ right) | (SplitPair left right) = merge (mergeSort right) (mergeSort left)
